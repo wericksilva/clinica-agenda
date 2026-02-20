@@ -1,3 +1,5 @@
+import AgendamentosPage from "@/app/dashboard/agendamentos/page"
+
 export default function Appointments() {
-  return <div>Appointments</div>
+  return <AgendamentosPage />
 }

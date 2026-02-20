@@ -1,3 +1,5 @@
-export default function clients() {
-  return <div>clients</div>
+import ClientesPage from "@/app/dashboard/clientes/page"
+
+export default function Clients() {
+  return <ClientesPage />
 }
