@@ -58,10 +58,20 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-2 rounded"
+          className="w-full bg-blue-600 text-white py-2 rounded"
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
+
+        <button
+          type="submit"
+           onClick={() => router.push("/register")}
+          disabled={loading}
+          className="w-full bg-black text-white py-2 rounded"
+        >
+          {loading ? "Entrando..." : "Cadastrar"}
+        </button>
+
       </form>
     </div>
   )
