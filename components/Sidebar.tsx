@@ -1,8 +1,15 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Calendar, Users, Settings } from "lucide-react"
+import {
+  LayoutDashboard,
+  Calendar,
+  Users,
+  Settings,
+  Menu,
+} from "lucide-react"
 
 const menu = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -13,34 +20,55 @@ const menu = [
 
 export default function Sidebar() {
   const pathname = usePathname()
+  const [open, setOpen] = useState(false)
 
   return (
-    <aside className="w-64 bg-white border-r">
-      <div className="p-6 font-bold text-xl border-b">
-        Clínica SaaS
-      </div>
+    <>
+      {/* Botão mobile */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="md:hidden fixed top-4 left-4 z-50 bg-white p-2 rounded-md border"
+      >
+        <Menu size={20} />
+      </button>
 
-      <nav className="p-4 space-y-2">
-        {menu.map((item) => {
-          const Icon = item.icon
-          const active = pathname === item.href
+      <aside
+        className={`
+          bg-white border-r w-64 h-screen
+          fixed md:static
+          top-0 left-0
+          transition-transform duration-300
+          ${open ? "translate-x-0" : "-translate-x-full"}
+          md:translate-x-0
+        `}
+      >
+        <div className="h-16 flex items-center px-6 border-b font-bold">
+          Clínica SaaS
+        </div>
 
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center gap-3 p-3 rounded-lg transition ${
-                active
-                  ? "bg-green-100 text-green-700"
-                  : "hover:bg-gray-100"
-              }`}
-            >
-              <Icon size={18} />
-              {item.name}
-            </Link>
-          )
-        })}
-      </nav>
-    </aside>
+        <nav className="p-4 space-y-2">
+          {menu.map((item) => {
+            const Icon = item.icon
+            const active = pathname === item.href
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 p-3 rounded-lg transition ${
+                  active
+                    ? "bg-green-100 text-green-700"
+                    : "hover:bg-gray-100"
+                }`}
+              >
+                <Icon size={18} />
+                {item.name}
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
+    </>
   )
 }
