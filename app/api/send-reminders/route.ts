@@ -69,7 +69,7 @@ export async function GET() {
       continue
     }
 
-    // 🔥 Formatar data e hora do agendamento
+    // Formatar data e hora do agendamento
     const date = new Date(appt.appointment_date)
 
     const formattedDate = date.toLocaleDateString("pt-BR")
@@ -79,7 +79,7 @@ export async function GET() {
       minute: "2-digit",
     })
 
-    //  Mensagem padrão caso não exista personalizada
+    // Mensagem padrão caso não exista personalizada
     const template =
       settings.reminder_message ||
       "Olá {{nome}}, seu atendimento está agendado para {{data}} às {{hora}}."
