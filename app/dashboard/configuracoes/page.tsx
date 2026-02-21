@@ -3,10 +3,22 @@
 import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabaseClient"
 
+type ClinicSetting = {
+  id: string
+  clinic_name: string
+  reminder_message: string
+  send_hour: number
+  zapi_instance_id: string
+  zapi_token: string
+  zapi_client_token: string
+  created_at: string
+}
+
 export default function ConfigPage() {
   const supabase = createClient()
 
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [clinicId, setClinicId] = useState<string | null>(null)
 
   const [clinicName, setClinicName] = useState("")
@@ -16,101 +28,101 @@ export default function ConfigPage() {
   const [token, setToken] = useState("")
   const [clientToken, setClientToken] = useState("")
 
+  const [settingsList, setSettingsList] = useState<ClinicSetting[]>([])
+  const [successMessage, setSuccessMessage] = useState("")
+
+  // 🔥 Buscar lista de configurações
+  async function fetchSettings(clinicId: string) {
+    const { data } = await supabase
+      .from("clinic_settings")
+      .select("*")
+      .eq("clinic_id", clinicId)
+      .order("created_at", { ascending: false })
+
+    if (data) {
+      setSettingsList(data)
+    }
+  }
+
   useEffect(() => {
-    async function loadSettings() {
+    async function loadData() {
       setLoading(true)
 
       const { data: userData } = await supabase.auth.getUser()
 
       if (!userData.user) {
-        console.error("Usuário não autenticado")
         setLoading(false)
         return
       }
 
-      // 🔥 Buscar clínica vinculada ao usuário
-       let { data: clinic } = await supabase
+      let { data: clinic } = await supabase
         .from("clinics")
         .select("*")
         .eq("owner_id", userData.user.id)
         .maybeSingle()
 
-      // 🔥 Se não existir clínica, cria automaticamente
       if (!clinic) {
-        const { data: newClinic, error: insertError } = await supabase
+        const { data: newClinic } = await supabase
           .from("clinics")
           .insert({
             name: "Minha Clínica",
-            owner_id: userData.user.id, // 👈 corrigido
+            owner_id: userData.user.id,
           })
           .select()
           .single()
-
-        if (insertError) {
-          console.error("Erro ao criar clínica:", insertError)
-          setLoading(false)
-          return
-        }
 
         clinic = newClinic
       }
 
       setClinicId(clinic.id)
-
-      // 🔥 Buscar configurações
-      const { data: settings } = await supabase
-        .from("clinic_settings")
-        .select("*")
-        .eq("clinic_id", clinic.id)
-        .maybeSingle()
-
-      if (settings) {
-        setClinicName(settings.clinic_name || "")
-        setMessage(settings.reminder_message || "")
-        setSendHour(settings.send_hour || 9)
-        setInstanceId(settings.zapi_instance_id || "")
-        setToken(settings.zapi_token || "")
-        setClientToken(settings.zapi_client_token || "")
-      }
+      await fetchSettings(clinic.id)
 
       setLoading(false)
     }
 
-    loadSettings()
+    loadData()
   }, [])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!clinicId) {
-      alert("Erro: Clínica não encontrada")
-      return
-    }
+    if (!clinicId) return
+
+    setSaving(true)
 
     const { error } = await supabase
       .from("clinic_settings")
-      .upsert(
-        {
-          clinic_id: clinicId,
-          clinic_name: clinicName,
-          reminder_message: message,
-          send_hour: sendHour,
-          zapi_instance_id: instanceId,
-          zapi_token: token,
-          zapi_client_token: clientToken,
-        },
-        {
-          onConflict: "clinic_id",
-        }
-      )
+      .insert({
+        clinic_id: clinicId,
+        clinic_name: clinicName,
+        reminder_message: message,
+        send_hour: sendHour,
+        zapi_instance_id: instanceId,
+        zapi_token: token,
+        zapi_client_token: clientToken,
+      })
+
+    setSaving(false)
 
     if (error) {
-      console.error("Erro ao salvar:", error)
-      alert("Erro ao salvar configurações")
+      console.error(error)
       return
     }
 
-    alert("Configurações salvas com sucesso!")
+    // ✅ Limpar campos
+    setClinicName("")
+    setMessage("")
+    setSendHour(9)
+    setInstanceId("")
+    setToken("")
+    setClientToken("")
+
+    setSuccessMessage("Configuração salva com sucesso!")
+
+    // 🔥 Recarregar tabela
+    await fetchSettings(clinicId)
+
+    setTimeout(() => setSuccessMessage(""), 3000)
   }
 
   if (loading) {
@@ -118,8 +130,8 @@ export default function ConfigPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow">
-      <h1 className="text-2xl font-bold mb-6">Configurações</h1>
+    <div className="max-w-5xl mx-auto bg-white p-6 rounded-lg shadow space-y-8">
+      <h1 className="text-2xl font-bold">Configurações</h1>
 
       <form onSubmit={handleSave} className="space-y-4">
 
@@ -140,13 +152,10 @@ export default function ConfigPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
           />
-          <p className="text-sm text-gray-500">
-            Use: {"{{nome}}"} {"{{data}}"} {"{{hora}}"}
-          </p>
         </div>
 
         <div>
-          <label>Horário de Envio (0-23)</label>
+          <label>Horário de Envio</label>
           <input
             type="number"
             min={0}
@@ -186,12 +195,57 @@ export default function ConfigPage() {
 
         <button
           type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          disabled={saving}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
         >
-          Salvar Configurações
+          {saving ? "Salvando..." : "Salvar Configurações"}
         </button>
 
+        {successMessage && (
+          <p className="text-green-600 text-sm">{successMessage}</p>
+        )}
+
       </form>
+
+      {/* 🔥 TABELA */}
+      <div>
+        <h2 className="text-xl font-semibold mb-4">
+          Configurações Salvas
+        </h2>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border border-gray-200 text-sm">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="p-2 border">Nome</th>
+                <th className="p-2 border">Hora</th>
+                <th className="p-2 border">Instance</th>
+                <th className="p-2 border">Criado em</th>
+              </tr>
+            </thead>
+            <tbody>
+              {settingsList.map((item) => (
+                <tr key={item.id}>
+                  <td className="p-2 border">{item.clinic_name}</td>
+                  <td className="p-2 border">{item.send_hour}h</td>
+                  <td className="p-2 border">{item.zapi_instance_id}</td>
+                  <td className="p-2 border">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
+
+              {settingsList.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="text-center p-4 text-gray-500">
+                    Nenhuma configuração salva ainda.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   )
 }
