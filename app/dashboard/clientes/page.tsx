@@ -153,100 +153,117 @@ function formatPhoneFromDB(value: string) {
 }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Clientes</h1>
+  <div className="min-h-screen bg-slate-50 px-4 py-6">
+    <div className="max-w-5xl mx-auto space-y-8">
 
-      <form
-        onSubmit={handleCreateClient}
-        className="bg-white p-6 rounded-xl shadow space-y-4 max-w-md"
-      >
-        <input
-          type="text"
-          placeholder="Nome"
-          className="w-full border p-2 rounded"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+      {/* Título */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">Clientes</h1>
+        <p className="text-gray-500 text-sm">
+          Gerencie os clientes da sua clínica
+        </p>
+      </div>
 
-        <input
-          type="text"
-          placeholder="+55 (11) 91234-5678"
-          className="w-full border p-2 rounded"
-          value={formatPhoneBR(phone)}
-          onChange={(e) => {
-            const numbers = e.target.value.replace(/\D/g, "")
-            const cleaned = numbers.startsWith("55")
-              ? numbers.slice(2)
-              : numbers
-            setPhone(cleaned)
-          }}
-          required
-        />
+      {/* Card Cadastro */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <form
+          onSubmit={handleCreateClient}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <input
+            type="text"
+            placeholder="Nome"
+            className="border p-3 rounded-lg w-full"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+          />
 
-        <button className="bg-black text-white px-4 py-2 rounded">
-          Adicionar Cliente
-        </button>
-      </form>
+          <input
+            type="text"
+            placeholder="+55 (11) 91234-5678"
+            className="border p-3 rounded-lg w-full"
+            value={formatPhoneBR(phone)}
+            onChange={(e) => {
+              const numbers = e.target.value.replace(/\D/g, "")
+              const cleaned = numbers.startsWith("55")
+                ? numbers.slice(2)
+                : numbers
+              setPhone(cleaned)
+            }}
+            required
+          />
 
-      <div className="bg-white p-4 rounded-xl shadow flex gap-4 max-w-2xl">
-  {/* Filtro por nome */}
-  <input
-    type="text"
-    placeholder="Pesquisar por nome..."
-    className="flex-1 border p-2 rounded"
-    value={searchName}
-    onChange={(e) => setSearchName(e.target.value)}
-  />
+          <button className=" bg-green-600 text-white rounded-lg px-4 py-3 hover:opacity-90 transition">
+            Adicionar
+          </button>
+        </form>
+      </div>
 
-  {/* Filtro por telefone */}
- <input
-  type="text"
-  placeholder="+55 (11) 91234-5678"
-  className="flex-1 border p-2 rounded"
-  value={formatPhoneFromDB(searchPhone)}
-  onChange={(e) => {
-    const numbers = e.target.value.replace(/\D/g, "")
-    const cleaned = numbers.startsWith("55")
-      ? numbers.slice(2)
-      : numbers
-    setSearchPhone(cleaned)
-  }}
-/>
+      {/* Card Filtros */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Pesquisar por nome..."
+            className="border p-3 rounded-lg w-full"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
 
+          <input
+            type="text"
+            placeholder="+55 (11) 91234-5678"
+            className="border p-3 rounded-lg w-full"
+            value={formatPhoneFromDB(searchPhone)}
+            onChange={(e) => {
+              const numbers = e.target.value.replace(/\D/g, "")
+              const cleaned = numbers.startsWith("55")
+                ? numbers.slice(2)
+                : numbers
+              setSearchPhone(cleaned)
+            }}
+          />
+        </div>
+      </div>
 
-</div>
-
-      <div className="bg-white rounded-xl shadow">
+      {/* Lista */}
+      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         {loading ? (
-          <p className="p-4">Carregando...</p>
+          <p className="p-6 text-gray-500">Carregando...</p>
         ) : filteredClients.length === 0 ? (
-          <p className="p-4 text-gray-500">Nenhum cliente cadastrado.</p>
+          <p className="p-6 text-gray-500">
+            Nenhum cliente encontrado.
+          </p>
         ) : (
-          <ul>
+          <ul className="divide-y">
             {filteredClients.map((client) => (
               <li
                 key={client.id}
-                className="flex justify-between items-center p-4 border-b"
-                >
+                className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 hover:bg-slate-50 transition"
+              >
                 <div>
-                    <p className="font-medium">{client.name}</p>
-                   <p className="text-sm text-gray-500">
+                  <p className="font-semibold text-gray-800">
+                    {client.name}
+                  </p>
+                  <p className="text-sm text-gray-500">
                     {formatPhoneFromDB(client.phone)}
                   </p>
                 </div>
 
                 <button
-                    onClick={() => handleDeleteClient(client.id)}
-                    className="text-red-500 hover:text-red-700 text-sm"
+                  onClick={() => handleDeleteClient(client.id)}
+                  className="text-red-500 text-sm hover:text-red-700 self-start md:self-auto"
                 >
-                    Excluir
+                  Excluir
                 </button>
-                </li>
+              </li>
             ))}
           </ul>
         )}
       </div>
+
     </div>
-  )
+  </div>
+)
 }

@@ -172,101 +172,115 @@ function formatDateBR(dateString: string) {
 }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Agendamentos</h1>
+  <div className="min-h-screen bg-slate-50 px-4 py-6">
+    <div className="max-w-5xl mx-auto space-y-8">
 
-      <form
-        onSubmit={handleSaveAppointment}
-        className="bg-white p-6 rounded-xl shadow space-y-4 max-w-md"
-      >
-        <select
-          className="w-full border p-2 rounded"
-          value={selectedClient}
-          onChange={(e) => setSelectedClient(e.target.value)}
-          required
-        >
-          <option value="">Selecione o cliente</option>
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.name}
-            </option>
-          ))}
-        </select>
-
-        <input
-          type="datetime-local"
-          className="w-full border p-2 rounded"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          required
-        />
-
-        <button className="bg-black text-white px-4 py-2 rounded">
-          {editingId ? "Atualizar Agendamento" : "Criar Agendamento"}
-        </button>
-
-      </form>
-
-      <div className="bg-white p-4 rounded-xl shadow flex gap-4 max-w-2xl">
-        {/* Filtro por nome */}
-        <input
-          type="text"
-          placeholder="Pesquisar por nome..."
-          className="flex-1 border p-2 rounded"
-          value={searchName}
-          onChange={(e) => setSearchName(e.target.value)}
-        />
-
-        {/* Filtro por data */}
-        <input
-          type="date"
-          className="border p-2 rounded"
-          value={searchDate}
-          onChange={(e) => setSearchDate(e.target.value)}
-        />
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl md:text-3xl font-bold">
+          Agendamentos
+        </h1>
+        <p className="text-sm text-gray-500">
+          Gerencie todos os atendimentos da sua clínica
+        </p>
       </div>
 
-      <div className="bg-white rounded-xl shadow">
+      {/* Card Formulário */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <form
+          onSubmit={handleSaveAppointment}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4"
+        >
+          <select
+            className="border p-3 rounded-lg w-full"
+            value={selectedClient}
+            onChange={(e) => setSelectedClient(e.target.value)}
+            required
+          >
+            <option value="">Selecione o cliente</option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </select>
+
+          <input
+            type="datetime-local"
+            className="border p-3 rounded-lg w-full"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+
+          <button className=" bg-green-600 text-white rounded-lg px-4 py-3 hover:opacity-90 transition">
+            {editingId ? "Atualizar" : "Criar"}
+          </button>
+        </form>
+      </div>
+
+      {/* Card Filtros */}
+      <div className="bg-white p-6 rounded-2xl shadow-sm border">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <input
+            type="text"
+            placeholder="Pesquisar por nome..."
+            className="border p-3 rounded-lg w-full"
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+
+          <input
+            type="date"
+            className="border p-3 rounded-lg w-full"
+            value={searchDate}
+            onChange={(e) => setSearchDate(e.target.value)}
+          />
+        </div>
+      </div>
+
+      {/* Lista */}
+      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
         {loading ? (
-          <p className="p-4">Carregando...</p>
+          <p className="p-6 text-gray-500">Carregando...</p>
         ) : filteredAppointments.length === 0 ? (
-          <p className="p-4 text-gray-500">
+          <p className="p-6 text-gray-500">
             Nenhum agendamento encontrado.
           </p>
         ) : (
-          <ul>
-            {filteredAppointments.map((appt) => (
-              <li
-                key={appt.id}
-                onClick={() => handleSelectAppointment(appt)}
-                className="p-4 border-b flex justify-between cursor-pointer hover:bg-gray-50"
-              >
-                <div>
-                  <p className="font-medium">
-                    {appt.clients?.name}
-                  </p>
-                 
-                  <p className="text-sm text-gray-500">
-                    {formatDateBR(appt.appointment_date)}
-                  </p>
+          <ul className="divide-y">
+            {filteredAppointments.map((appt) => {
+              const status = getStatusConfig(appt.status)
 
-                </div>
-                {(() => {
-                    const status = getStatusConfig(appt.status)
+              return (
+                <li
+                  key={appt.id}
+                  onClick={() => handleSelectAppointment(appt)}
+                  className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 hover:bg-slate-50 transition cursor-pointer"
+                >
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      {appt.clients?.name}
+                    </p>
 
-                    return (
-                      <span
-                        className={`text-xs font-medium px-3 py-1 rounded-full ${status.className}`}
-                      >
-                        {status.label}
-                      </span>
-                    )
-                  })()}
-              </li>
-            ))}
+                    <p className="text-sm text-gray-500">
+                      {formatDateBR(appt.appointment_date)}
+                    </p>
+                  </div>
+
+                  <span
+                    className={`text-xs font-medium px-3 py-1 rounded-full ${status.className}`}
+                  >
+                    {status.label}
+                  </span>
+                </li>
+              )
+            })}
           </ul>
         )}
       </div>
+
     </div>
-  )
+  </div>
+)
 }
