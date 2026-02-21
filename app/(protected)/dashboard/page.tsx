@@ -9,6 +9,10 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
 } from "recharts"
 
 type Appointment = {
@@ -25,6 +29,11 @@ type ChartItem = {
   total: number
 }
 
+type StatusChartItem = {
+  name: string
+  value: number
+}
+
 export default function DashboardPage() {
   const supabase = createClient()
 
@@ -32,10 +41,10 @@ export default function DashboardPage() {
   const [totalClients, setTotalClients] = useState<number>(0)
   const [totalAppointments, setTotalAppointments] = useState<number>(0)
   const [todayAppointments, setTodayAppointments] = useState<number>(0)
-  const [scheduledAppointments, setScheduledAppointments] = useState<number>(0)
   const [completionRate, setCompletionRate] = useState<number>(0)
   const [growth, setGrowth] = useState<number>(0)
   const [chartData, setChartData] = useState<ChartItem[]>([])
+  const [statusChartData, setStatusChartData] = useState<StatusChartItem[]>([])
   const [nextAppointments, setNextAppointments] = useState<Appointment[]>([])
 
   useEffect(() => {
@@ -65,6 +74,8 @@ export default function DashboardPage() {
 
       if (!appointments) return
 
+      // ===== MÉTRICAS BÁSICAS =====
+
       const todayISO = new Date().toISOString().slice(0, 10)
 
       const todayCount = appointments.filter((appt) =>
@@ -76,7 +87,11 @@ export default function DashboardPage() {
       ).length
 
       const completedCount = appointments.filter(
-        (appt) => appt.status === "completed"
+        (appt) => appt.status === "Concluído"
+      ).length
+
+      const cancelledCount = appointments.filter(
+        (appt) => appt.status === "Cancelado"
       ).length
 
       const completion =
@@ -84,7 +99,8 @@ export default function DashboardPage() {
           ? 0
           : (completedCount / appointments.length) * 100
 
-      // Crescimento mensal
+      // ===== CRESCIMENTO MENSAL =====
+
       const now = new Date()
       const currentMonth = now.getMonth()
       const currentYear = now.getFullYear()
@@ -112,7 +128,8 @@ export default function DashboardPage() {
               previousMonthCount) *
             100
 
-      // Últimos 7 dias tipado corretamente
+      // ===== GRÁFICO ÚLTIMOS 7 DIAS =====
+
       const last7Days: Record<string, number> = {}
 
       for (let i = 6; i >= 0; i--) {
@@ -139,6 +156,16 @@ export default function DashboardPage() {
         })
       )
 
+      // ===== GRÁFICO STATUS (PIZZA) =====
+
+      const statusData: StatusChartItem[] = [
+        { name: "Agendado", value: scheduledCount },
+        { name: "Concluído", value: completedCount },
+        { name: "Cancelado", value: cancelledCount },
+      ]
+
+      // ===== PRÓXIMOS AGENDAMENTOS =====
+
       const upcoming = appointments
         .filter(
           (appt) => new Date(appt.appointment_date) >= new Date()
@@ -150,13 +177,15 @@ export default function DashboardPage() {
         )
         .slice(0, 5)
 
+      // ===== SET STATES =====
+
       setTotalClients(clientCount || 0)
       setTotalAppointments(appointments.length)
       setTodayAppointments(todayCount)
-      setScheduledAppointments(scheduledCount)
       setCompletionRate(Number(completion.toFixed(1)))
       setGrowth(Number(growthPercentage.toFixed(1)))
       setChartData(chartFormatted)
+      setStatusChartData(statusData)
       setNextAppointments(upcoming)
       setLoading(false)
     }
@@ -164,12 +193,14 @@ export default function DashboardPage() {
     loadDashboard()
   }, [])
 
-  if (loading) return <p className="p-6">Carregando...</p>
+  if (loading)
+    return <p className="p-6 text-gray-500">Carregando...</p>
 
   return (
     <div className="space-y-10">
       <h1 className="text-3xl font-bold">Dashboard</h1>
 
+      {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <StatCard title="Clientes" value={totalClients} />
         <StatCard title="Agendamentos" value={totalAppointments} />
@@ -186,6 +217,7 @@ export default function DashboardPage() {
         />
       </div>
 
+      {/* Gráfico Barras */}
       <div className="bg-white p-6 rounded-2xl shadow">
         <h2 className="font-semibold mb-4">
           Agendamentos últimos 7 dias
@@ -203,6 +235,34 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Gráfico Pizza */}
+      <div className="bg-white p-6 rounded-2xl shadow">
+        <h2 className="font-semibold mb-4">
+          Distribuição de Status
+        </h2>
+
+        <div className="h-72">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={statusChartData}
+                dataKey="value"
+                nameKey="name"
+                outerRadius={100}
+                label
+              >
+                <Cell fill="#3b82f6" />
+                <Cell fill="#22c55e" />
+                <Cell fill="#ef4444" />
+              </Pie>
+              <Tooltip />
+              <Legend />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      {/* Próximos */}
       <div className="bg-white p-6 rounded-2xl shadow">
         <h2 className="font-semibold mb-4">
           Próximos agendamentos

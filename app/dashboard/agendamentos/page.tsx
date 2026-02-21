@@ -141,12 +141,12 @@ function getStatusConfig(status: string) {
         label: "Agendado",
         className: "bg-blue-100 text-blue-700",
       }
-    case "completed":
+    case "Concluído":
       return {
         label: "Concluído",
         className: "bg-green-100 text-green-700",
       }
-    case "cancelled":
+    case "Cancelado":
       return {
         label: "Cancelado",
         className: "bg-red-100 text-red-700",
