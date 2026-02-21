@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabaseClient"
 export default function ConfigPage() {
   const supabase = createClient()
 
+  const [loading, setLoading] = useState(true)
   const [clinicId, setClinicId] = useState<string | null>(null)
+
   const [clinicName, setClinicName] = useState("")
   const [message, setMessage] = useState("")
   const [sendHour, setSendHour] = useState(9)
@@ -16,23 +18,51 @@ export default function ConfigPage() {
 
   useEffect(() => {
     async function loadSettings() {
+      setLoading(true)
+
       const { data: userData } = await supabase.auth.getUser()
 
-      const { data: clinic } = await supabase
-        .from("clinics")
-        .select("id")
-        .eq("user_id", userData.user?.id)
-        .single()
+      if (!userData.user) {
+        console.error("Usuário não autenticado")
+        setLoading(false)
+        return
+      }
 
-      if (!clinic) return
+      // 🔥 Buscar clínica vinculada ao usuário
+       let { data: clinic } = await supabase
+        .from("clinics")
+        .select("*")
+        .eq("owner_id", userData.user.id)
+        .maybeSingle()
+
+      // 🔥 Se não existir clínica, cria automaticamente
+      if (!clinic) {
+        const { data: newClinic, error: insertError } = await supabase
+          .from("clinics")
+          .insert({
+            name: "Minha Clínica",
+            owner_id: userData.user.id, // 👈 corrigido
+          })
+          .select()
+          .single()
+
+        if (insertError) {
+          console.error("Erro ao criar clínica:", insertError)
+          setLoading(false)
+          return
+        }
+
+        clinic = newClinic
+      }
 
       setClinicId(clinic.id)
 
+      // 🔥 Buscar configurações
       const { data: settings } = await supabase
         .from("clinic_settings")
         .select("*")
         .eq("clinic_id", clinic.id)
-        .single()
+        .maybeSingle()
 
       if (settings) {
         setClinicName(settings.clinic_name || "")
@@ -42,6 +72,8 @@ export default function ConfigPage() {
         setToken(settings.zapi_token || "")
         setClientToken(settings.zapi_client_token || "")
       }
+
+      setLoading(false)
     }
 
     loadSettings()
@@ -50,19 +82,39 @@ export default function ConfigPage() {
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
 
-    if (!clinicId) return
+    if (!clinicId) {
+      alert("Erro: Clínica não encontrada")
+      return
+    }
 
-    await supabase.from("clinic_settings").upsert({
-      clinic_id: clinicId,
-      clinic_name: clinicName,
-      reminder_message: message,
-      send_hour: sendHour,
-      zapi_instance_id: instanceId,
-      zapi_token: token,
-      zapi_client_token: clientToken,
-    })
+    const { error } = await supabase
+      .from("clinic_settings")
+      .upsert(
+        {
+          clinic_id: clinicId,
+          clinic_name: clinicName,
+          reminder_message: message,
+          send_hour: sendHour,
+          zapi_instance_id: instanceId,
+          zapi_token: token,
+          zapi_client_token: clientToken,
+        },
+        {
+          onConflict: "clinic_id",
+        }
+      )
 
-    alert("Configurações salvas!")
+    if (error) {
+      console.error("Erro ao salvar:", error)
+      alert("Erro ao salvar configurações")
+      return
+    }
+
+    alert("Configurações salvas com sucesso!")
+  }
+
+  if (loading) {
+    return <div className="p-6">Carregando...</div>
   }
 
   return (
@@ -132,9 +184,13 @@ export default function ConfigPage() {
           />
         </div>
 
-        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
           Salvar Configurações
         </button>
+
       </form>
     </div>
   )
