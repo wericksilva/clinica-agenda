@@ -42,7 +42,7 @@ export default function Sidebar() {
           md:translate-x-0
         `}
       >
-        <div className="h-16 flex items-center px-6 border-b font-bold">
+        <div className="h-16 flex items-center px-6 border-b font-bold ml-[59px]">
           Clínica SaaS
         </div>
 
