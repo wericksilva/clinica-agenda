@@ -27,6 +27,12 @@ export default function AgendamentosPage() {
   const [date, setDate] = useState("")
   const [loading, setLoading] = useState(true)
 
+  const [searchName, setSearchName] = useState("")
+  const [searchDate, setSearchDate] = useState("")
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+
   async function loadAppointments(clinicId: string) {
     const { data } = await supabase
       .from("appointments")
@@ -66,10 +72,28 @@ export default function AgendamentosPage() {
     loadInitialData()
   }, [])
 
-  async function handleCreateAppointment(e: React.FormEvent) {
-    e.preventDefault()
-    if (!clinicId) return
+  
+  async function handleSaveAppointment(e: React.FormEvent) {
+  e.preventDefault()
+  if (!clinicId) return
 
+  if (editingId) {
+    // UPDATE
+    const { error } = await supabase
+      .from("appointments")
+      .update({
+        client_id: selectedClient,
+        appointment_date: date,
+      })
+      .eq("id", editingId)
+
+    if (error) {
+      alert(error.message)
+      return
+    }
+
+  } else {
+    // INSERT
     const { error } = await supabase.from("appointments").insert({
       clinic_id: clinicId,
       client_id: selectedClient,
@@ -80,18 +104,79 @@ export default function AgendamentosPage() {
       alert(error.message)
       return
     }
-
-    setSelectedClient("")
-    setDate("")
-    loadAppointments(clinicId)
   }
+
+  // Resetar formulário
+  setSelectedClient("")
+  setDate("")
+  setEditingId(null)
+
+  loadAppointments(clinicId)
+}
+
+  const filteredAppointments = appointments.filter((appt) => {
+  const matchesName = appt.clients?.name
+    ?.toLowerCase()
+    .includes(searchName.toLowerCase())
+
+  const matchesDate = searchDate
+    ? appt.appointment_date.startsWith(searchDate)
+    : true
+
+  return matchesName && matchesDate
+})
+
+function handleSelectAppointment(appt: Appointment) {
+  setEditingId(appt.id)
+  setSelectedClient(
+    clients.find((c) => c.name === appt.clients?.name)?.id || ""
+  )
+  setDate(appt.appointment_date.slice(0, 16)) 
+}
+
+function getStatusConfig(status: string) {
+  switch (status) {
+    case "scheduled":
+      return {
+        label: "Agendado",
+        className: "bg-blue-100 text-blue-700",
+      }
+    case "completed":
+      return {
+        label: "Concluído",
+        className: "bg-green-100 text-green-700",
+      }
+    case "cancelled":
+      return {
+        label: "Cancelado",
+        className: "bg-red-100 text-red-700",
+      }
+    default:
+      return {
+        label: status,
+        className: "bg-gray-100 text-gray-700",
+      }
+  }
+}
+
+function formatDateBR(dateString: string) {
+  const date = new Date(dateString)
+
+  const formattedDate = date.toLocaleDateString("pt-BR")
+  const formattedTime = date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+
+  return `${formattedDate} às ${formattedTime}`
+}
 
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Agendamentos</h1>
 
       <form
-        onSubmit={handleCreateAppointment}
+        onSubmit={handleSaveAppointment}
         className="bg-white p-6 rounded-xl shadow space-y-4 max-w-md"
       >
         <select
@@ -117,35 +202,66 @@ export default function AgendamentosPage() {
         />
 
         <button className="bg-black text-white px-4 py-2 rounded">
-          Criar Agendamento
+          {editingId ? "Atualizar Agendamento" : "Criar Agendamento"}
         </button>
+
       </form>
+
+      <div className="bg-white p-4 rounded-xl shadow flex gap-4 max-w-2xl">
+        {/* Filtro por nome */}
+        <input
+          type="text"
+          placeholder="Pesquisar por nome..."
+          className="flex-1 border p-2 rounded"
+          value={searchName}
+          onChange={(e) => setSearchName(e.target.value)}
+        />
+
+        {/* Filtro por data */}
+        <input
+          type="date"
+          className="border p-2 rounded"
+          value={searchDate}
+          onChange={(e) => setSearchDate(e.target.value)}
+        />
+      </div>
 
       <div className="bg-white rounded-xl shadow">
         {loading ? (
           <p className="p-4">Carregando...</p>
-        ) : appointments.length === 0 ? (
+        ) : filteredAppointments.length === 0 ? (
           <p className="p-4 text-gray-500">
             Nenhum agendamento encontrado.
           </p>
         ) : (
           <ul>
-            {appointments.map((appt) => (
+            {filteredAppointments.map((appt) => (
               <li
                 key={appt.id}
-                className="p-4 border-b flex justify-between"
+                onClick={() => handleSelectAppointment(appt)}
+                className="p-4 border-b flex justify-between cursor-pointer hover:bg-gray-50"
               >
                 <div>
                   <p className="font-medium">
                     {appt.clients?.name}
                   </p>
+                 
                   <p className="text-sm text-gray-500">
-                    {new Date(appt.appointment_date).toLocaleString()}
+                    {formatDateBR(appt.appointment_date)}
                   </p>
+
                 </div>
-                <span className="text-sm bg-gray-200 px-2 py-1 rounded">
-                  {appt.status}
-                </span>
+                {(() => {
+                    const status = getStatusConfig(appt.status)
+
+                    return (
+                      <span
+                        className={`text-xs font-medium px-3 py-1 rounded-full ${status.className}`}
+                      >
+                        {status.label}
+                      </span>
+                    )
+                  })()}
               </li>
             ))}
           </ul>
