@@ -5,14 +5,13 @@ export async function GET() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-
-  // 🔥 Hora atual do servidor
+  //  Hora atual do servidor
   const now = new Date()
   const currentHour = now.getHours()
 
   console.log("Hora atual:", currentHour)
 
-  // 🔥 Buscar agendamentos ainda não enviados
+  // Buscar agendamentos ainda não enviados
   const { data: appointments, error } = await supabase
     .from("appointments")
     .select(`
@@ -40,7 +39,7 @@ export async function GET() {
 
     if (!client?.phone) continue
 
-    // 🔥 Buscar configurações da clínica
+    // Buscar configurações da clínica
     const { data: settings } = await supabase
       .from("clinic_settings")
       .select("*")
@@ -52,7 +51,7 @@ export async function GET() {
       continue
     }
 
-    // 🔥 Verificar se é a hora configurada
+    //  Verificar se é a hora configurada
     if (currentHour !== settings.send_hour) {
       console.log(
         `Não é hora de envio. Atual: ${currentHour} | Configurado: ${settings.send_hour}`
@@ -60,7 +59,7 @@ export async function GET() {
       continue
     }
 
-    // 🔥 Validar credenciais Z-API
+    // Validar credenciais Z-API
     if (
       !settings.zapi_instance_id ||
       !settings.zapi_token ||
@@ -80,12 +79,12 @@ export async function GET() {
       minute: "2-digit",
     })
 
-    // 🔥 Mensagem padrão caso não exista personalizada
+    //  Mensagem padrão caso não exista personalizada
     const template =
       settings.reminder_message ||
       "Olá {{nome}}, seu atendimento está agendado para {{data}} às {{hora}}."
 
-    // 🔥 Substituir variáveis
+    // Substituir variáveis
     const message = template
       .replace("{{nome}}", client.name || "")
       .replace("{{data}}", formattedDate)
