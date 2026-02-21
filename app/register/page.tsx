@@ -59,10 +59,20 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-black text-white py-2 rounded"
+          className="w-full bg-blue-600 text-white py-2 rounded"
         >
           {loading ? "Criando..." : "Criar Conta"}
         </button>
+
+        <button
+          type="submit"
+            onClick={() => router.push("/login")}
+          className="w-full bg-black text-white py-2 rounded"
+        >
+          {"Voltar"}
+        </button>
+
+
       </form>
     </div>
   )
