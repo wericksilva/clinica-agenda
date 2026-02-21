@@ -4,7 +4,6 @@ export default function Header() {
      <h2 className="font-semibold text-lg ml-[59px]">
   Painel da Clínica
 </h2>
-
       <div className="text-sm text-gray-600">
         admin@clinica.com
       </div>
