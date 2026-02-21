@@ -66,7 +66,6 @@ export default function LoginPage() {
         <button
           type="submit"
            onClick={() => router.push("/register")}
-          disabled={loading}
           className="w-full bg-black text-white py-2 rounded"
         >
           {loading ? "Entrando..." : "Cadastrar"}
